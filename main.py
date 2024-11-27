@@ -1,4 +1,5 @@
 import os
+import logging
 import requests
 from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
@@ -8,6 +9,16 @@ load_dotenv()
 
 # Initialize the app with your bot token
 app = App(token=os.environ.get("SLACK_BOT_TOKEN"))
+
+# Setup logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    handlers=[
+        logging.FileHandler("conversation_threads.log"),  # Save logs to a file
+        logging.StreamHandler()  # Also log to console
+    ]
+)
 
 # Endpoint configuration
 BASE_API_URL = os.environ.get("BASE_API_URL", "https://graphchat.promptengineers.ai")
@@ -20,10 +31,15 @@ HEADERS = {
 # In-memory storage for thread IDs
 conversation_threads = {}
 
+SYSTEM_PROMPT = ("You are a helpful Slack assistant. Be concise and to the point. Do not hallucinate. "+
+                 "If you are not sure about the answer, say so. When executing tools you utilize Chain-of-Thought reasoning "+
+                 "to optimize for the best outcome. If something is unclear, ask clarifying questions.")
+
 # Function to send a query to the API
 def query_endpoint(question, thread_id=None):
     endpoint = f"{CHAT_ENDPOINT}/{thread_id}" if thread_id else CHAT_ENDPOINT
     payload = {
+        "system": SYSTEM_PROMPT,
         "query": question,
         "stream": False,
         "tools": [],
@@ -42,6 +58,14 @@ def handle_app_mention(event, say):
     user_id = event["user"]
     text = event["text"]
 
+    # Check if the user wants to reset the thread
+    if "reset" in text.lower():
+        if channel_id in conversation_threads:
+            del conversation_threads[channel_id]
+        logging.info(f"Thread reset for channel: {channel_id}")
+        say(f"Thread context has been reset for channel <#{channel_id}>.")
+        return
+
     # Extract the query, assuming it's the text after the mention
     question = text.split(maxsplit=1)[-1] if len(text.split()) > 1 else "What can I help you with?"
 
@@ -56,13 +80,28 @@ def handle_app_mention(event, say):
     # Update thread context
     if new_thread_id:
         conversation_threads[channel_id] = new_thread_id
+        logging.info(f"New thread ID for channel {channel_id}: {new_thread_id}")
+
+    # Log the query and response for tracking
+    logging.info(f"Channel: {channel_id}, User: {user_id}, Query: {question}, Thread ID: {thread_id}, Response: {response}")
 
     say(response)
+
+# Listener for a reset command
+@app.message("reset")
+def reset_thread_context(message, say):
+    channel_id = message["channel"]
+
+    if channel_id in conversation_threads:
+        del conversation_threads[channel_id]
+        logging.info(f"Thread reset for channel: {channel_id}")
+        say(f"Thread context has been reset for channel <#{channel_id}>.")
+    else:
+        say(f"No active thread to reset for channel <#{channel_id}>.")
 
 # Listens to incoming messages that contain "hello"
 @app.message("hello")
 def message_hello(message, say):
-    # say() sends a message to the channel where the event was triggered
     say(f"Hey there <@{message['user']}>! How can I help you today?")
 
 # Start the app
