@@ -1,1 +1,4 @@
 slack_bolt
+httpx
+aiohttp
+python-dotenv
