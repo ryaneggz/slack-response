@@ -41,7 +41,14 @@ BASE_API_URL=http://localhost:8000
    python main.py
    ```
 
-### Docker Setup
+### Docker Run
+
+1. Run app container:
+   ```bash
+   docker-compose up --build
+   ```
+
+### Docker Build
 
 1. Build the Docker image:
    ```bash
