@@ -31,9 +31,9 @@ HEADERS = {
 # In-memory storage for thread IDs
 conversation_threads = {}
 
-SYSTEM_PROMPT = ("You are a helpful Slack assistant. Be concise and to the point. Do not hallucinate. "+
-                 "When executing tools you utilize Chain-of-Thought reasoning "+
-                 "to optimize for the best outcome. If something is unclear, ask clarifying questions.")
+SYSTEM_PROMPT = ("You are a helpful Slack assistant. Be concise and to the point. "+
+                 "When executing tools you utilize Chain-of-Thought reasoning to optimize for the best outcome. "+
+                 "If something is unclear, ask clarifying questions.")
 # SYSTEM_PROMPT = "You are a helpful assistant."
 
 # Function to send a query to the API
