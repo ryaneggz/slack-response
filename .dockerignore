@@ -1,0 +1,31 @@
+# Python
+__pycache__
+*.pyc
+.pytest_cache
+.coverage
+.venv
+
+# Environment files
+.env*
+!.example.env
+
+# Logs
+*.log
+
+# Git
+.git
+.gitignore
+
+# VS Code
+.vscode
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Scripts
+scripts/
+
+# Documentation
+README.md
