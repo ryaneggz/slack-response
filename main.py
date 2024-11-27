@@ -31,11 +31,7 @@ HEADERS = {
 # In-memory storage for thread IDs
 conversation_threads = {}
 
-SYSTEM_PROMPT = ("You are a helpful Slack assistant. Be concise and to the point. "+
-                 "When executing tools you utilize Chain-of-Thought reasoning to optimize for the best outcome. "+
-                 "If something is unclear, ask clarifying questions.")
-# SYSTEM_PROMPT = "You are a helpful assistant."
-
+SYSTEM_PROMPT = ("You are a helpful Slack assistant. Be concise and to the point.")
 # Function to send a query to the API
 def query_endpoint(question, thread_id=None):
     endpoint = f"{CHAT_ENDPOINT}/{thread_id}" if thread_id else CHAT_ENDPOINT
