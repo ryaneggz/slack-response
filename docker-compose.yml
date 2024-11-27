@@ -3,6 +3,7 @@ version: '3.8'
 services:
   slack-response:
     container_name: slack_response
+    image: ryaneggz/slack-agent:latest
     build:
       context: .
       dockerfile: Dockerfile
