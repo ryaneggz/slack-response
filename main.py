@@ -56,7 +56,7 @@ def handle_app_mention(event, say):
     text = event["text"]
 
     # Check if the user wants to reset the thread
-    if "reset" in text.lower():
+    if "$reset" in text.lower():
         if channel_id in conversation_threads:
             del conversation_threads[channel_id]
         logging.info(f"Thread reset for channel: {channel_id}")
