@@ -23,6 +23,7 @@ logging.basicConfig(
 # Endpoint configuration
 BASE_API_URL = os.environ.get("BASE_API_URL", "https://graphchat.promptengineers.ai")
 CHAT_ENDPOINT = f"{BASE_API_URL}/llm"
+TOOLS_ENDPOINT = f"{BASE_API_URL}/tools"
 HEADERS = {
     "accept": "application/json",
     "Content-Type": "application/json",
@@ -63,6 +64,17 @@ def handle_app_mention(event, say):
         say(f"Thread context has been reset for channel <#{channel_id}>.")
         return
 
+    # Check if user wants to see available tools
+    if "$tools" in text.lower():
+        response = requests.get(TOOLS_ENDPOINT, headers=HEADERS)
+        if response.status_code == 200:
+            tools = response.json().get("tools", [])
+            tools_list = "\n- ".join(tools)  # Create the string separately
+            say(f"Available tools:\n- {tools_list}")  # Use the formatted string
+        else:
+            say(f"Error fetching tools: {response.status_code}")
+        return
+
     # Extract the query, assuming it's the text after the mention
     question = text.split(maxsplit=1)[-1] if len(text.split()) > 1 else "What can I help you with?"
 
@@ -85,7 +97,7 @@ def handle_app_mention(event, say):
     say(response)
 
 # Listener for a reset command
-@app.message("reset")
+@app.message("$reset")
 def reset_thread_context(message, say):
     channel_id = message["channel"]
 
