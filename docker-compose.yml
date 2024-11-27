@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  slack-response:
+    container_name: slack_response
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file: .env
+    restart: unless-stopped
+
+# networks:
+#   bot-network:
+#     driver: bridge 

@@ -32,8 +32,9 @@ HEADERS = {
 conversation_threads = {}
 
 SYSTEM_PROMPT = ("You are a helpful Slack assistant. Be concise and to the point. Do not hallucinate. "+
-                 "If you are not sure about the answer, say so. When executing tools you utilize Chain-of-Thought reasoning "+
+                 "When executing tools you utilize Chain-of-Thought reasoning "+
                  "to optimize for the best outcome. If something is unclear, ask clarifying questions.")
+# SYSTEM_PROMPT = "You are a helpful assistant."
 
 # Function to send a query to the API
 def query_endpoint(question, thread_id=None):
@@ -106,5 +107,6 @@ def message_hello(message, say):
 
 # Start the app
 if __name__ == "__main__":
+    logging.info(f"Starting Slack bot with client at {BASE_API_URL}")
     handler = SocketModeHandler(app, os.environ.get("SLACK_APP_TOKEN"))
     handler.start()
