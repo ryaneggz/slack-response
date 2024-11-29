@@ -16,7 +16,7 @@ jobs:
     env:
       UPDATE_LATEST: true
       REPO_OWNER: ryaneggz
-      REPO_NAME: slack-response
+      REPO_NAME: slack-agent
       DOCKER_USERNAME: ryaneggz
       DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
     steps:
