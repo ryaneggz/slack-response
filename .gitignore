@@ -20,9 +20,9 @@ langgraph.json
 .dockerignore
 .cursorignore
 .vscode
-.git*
 .example.env
 docs
 deployment
 logs/*
 !logs/.gitkeep
+.git
