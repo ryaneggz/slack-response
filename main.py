@@ -20,6 +20,7 @@ logging.basicConfig(
     ]
 )
 
+
 # Endpoint configuration
 BASE_API_URL = os.environ.get("BASE_API_URL", "https://graphchat.promptengineers.ai")
 CHAT_ENDPOINT = f"{BASE_API_URL}/llm"

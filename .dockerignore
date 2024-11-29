@@ -29,3 +29,8 @@ scripts/
 
 # Documentation
 README.md
+
+**/.env*
+**/.example.env
+**/.venv
+**/logs/
