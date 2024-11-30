@@ -5,6 +5,8 @@ on:
     workflows: ["Build"]
     types:
       - completed
+    branches-ignore:
+      - '*'
     tags:
       - '*rc*'
 
@@ -16,9 +18,17 @@ jobs:
     runs-on: ubuntu-latest
     if: |
       github.event.workflow_run.conclusion == 'success' && 
-      contains(github.event.workflow_run.head_branch, 'rc')
+      contains(github.event.workflow_run.head_ref, 'refs/tags/') &&
+      contains(github.event.workflow_run.head_ref, 'rc')
     environment: Dev
     steps:
+    - name: Debug workflow info
+      run: |
+        echo "Workflow run head_ref: ${{ github.event.workflow_run.head_ref }}"
+        echo "Workflow run conclusion: ${{ github.event.workflow_run.conclusion }}"
+        echo "Event name: ${{ github.event_name }}"
+        echo "Ref: ${{ github.ref }}"
+
     - name: Deploy to VM
       env:
         SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
