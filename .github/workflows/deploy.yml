@@ -33,8 +33,9 @@ jobs:
         # Add host to known hosts
         ssh-keyscan -H $SSH_HOST >> ~/.ssh/known_hosts
         
-        # Extract tag from ref
-        TAG=${GITHUB_REF#refs/tags/}
+        # Get the commit SHA instead of tag
+        COMMIT_SHA="${{ github.event.workflow_run.head_sha }}"
+        SHORT_SHA=$(echo $COMMIT_SHA | cut -c1-7)
         
         # SSH into server and deploy
         ssh -i ~/.ssh/id_ed25519 $SSH_USER@$SSH_HOST "
@@ -46,10 +47,10 @@ jobs:
           echo 'Uptime: $(uptime -p)'
           docker ps
 
-          # Setup variables
+          # Setup variables with SHA-based image tag
           REPO_OWNER="ryaneggz"
           REPO_NAME="slack-agent"
-          IMAGE_NAME="${REPO_OWNER}/${REPO_NAME}:${TAG}"
+          IMAGE_NAME="${REPO_OWNER}/${REPO_NAME}:${SHORT_SHA}"
           CONTAINER_NAME="slack_agent"
 
           echo "Using image: $IMAGE_NAME"
