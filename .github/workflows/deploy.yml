@@ -40,6 +40,9 @@ jobs:
         REPO_NAME="slack-agent"
         IMAGE_NAME="${REPO_OWNER}/${REPO_NAME}:${SHORT_SHA}"
         CONTAINER_NAME="slack_agent"
+        SLACK_API_TOKEN=${{ secrets.SLACK_API_TOKEN }}
+        SLACK_BOT_TOKEN=${{ secrets.SLACK_BOT_TOKEN }}
+        BASE_API_URL=http://localhost:8000
         
         # SSH into server and deploy
         ssh -i ~/.ssh/id_ed25519 $SSH_USER@$SSH_HOST "
@@ -70,9 +73,9 @@ jobs:
               --name $CONTAINER_NAME \
               --restart always \
               -p 5000:5000 \
-              -e SLACK_API_TOKEN=${{ secrets.SLACK_API_TOKEN }} \
-              -e SLACK_BOT_TOKEN=${{ secrets.SLACK_BOT_TOKEN }} \
-              -e BASE_API_URL=http://localhost:8000 \
+              -e SLACK_API_TOKEN=$SLACK_API_TOKEN \
+              -e SLACK_BOT_TOKEN=$SLACK_BOT_TOKEN \
+              -e BASE_API_URL=$BASE_API_URL \
               $IMAGE_NAME; then
               
               # Step 5: Verify the new container is running properly
