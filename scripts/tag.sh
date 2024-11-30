@@ -1,6 +1,6 @@
 #!/bin/bash
 
-ORIGIN=slack-response
+ORIGIN=origin
 
 # Prompt for tag and message
 read -p "Enter tag (e.g. 0.0.1-rc1): " tag

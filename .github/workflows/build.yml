@@ -16,8 +16,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     if: |
-      github.event.workflow_run.conclusion == 'success' && 
-      (github.ref == 'refs/heads/development' || contains(github.ref, 'rc'))
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.ref == 'refs/heads/development') ||
+      (github.event_name == 'push' && contains(github.ref, 'rc'))
     env:
       UPDATE_LATEST: ${{ github.ref == 'refs/heads/development' }}
       REPO_OWNER: ryaneggz
