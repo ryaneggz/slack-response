@@ -59,7 +59,7 @@ jobs:
 
           # Step 3: Rename the current container (if it exists) for backup
           echo "Preparing backup of current container..."
-          if docker ps -a | grep -q slack-agent; then
+          if docker ps -a | grep -q $CONTAINER_NAME; then
               docker rename $CONTAINER_NAME $CONTAINER_NAME-backup || true
               docker stop $CONTAINER_NAME-backup || true
           fi
@@ -103,5 +103,5 @@ jobs:
               exit 1
           fi
 
-          echo "Slack-agent container has been successfully updated and is set to restart always."
+          echo "SlackAgent container has been successfully updated and is set to restart always."
         "
