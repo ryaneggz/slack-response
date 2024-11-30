@@ -5,18 +5,16 @@ on:
     workflows: ["Test"]
     types:
       - completed
-  push:
-    tags:
-      - '*rc*'
 
 jobs:
+  ###############################################################
+  ## Build Docker Image
+  ###############################################################
   build:
     runs-on: ubuntu-latest
-    if: |
-      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.ref == 'refs/heads/development') ||
-      (github.event_name == 'push' && contains(github.ref, 'rc'))
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.ref == 'refs/heads/development' }}
     env:
-      UPDATE_LATEST: ${{ github.ref == 'refs/heads/development' }}
+      UPDATE_LATEST: true
       REPO_OWNER: ryaneggz
       REPO_NAME: slack-agent
       DOCKER_USERNAME: ryaneggz
@@ -24,15 +22,6 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
-      with:
-        ref: ${{ github.event.push.before || github.sha }}
-
-    - name: Get commit info
-      run: |
-        echo "Building from commit: $(git rev-parse HEAD)"
-        echo "Commit message: $(git log -1 --pretty=%B)"
-        echo "Author: $(git log -1 --pretty=%an)"
-        echo "Date: $(git log -1 --pretty=%ad)"
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
@@ -43,37 +32,15 @@ jobs:
         username: ${{ env.DOCKER_USERNAME }}
         password: ${{ env.DOCKER_PASSWORD }}
 
-    - name: Check and build Docker image
+    - name: Build and push Docker image
       run: |
-        if [[ "${{ github.ref }}" == refs/tags/* ]]; then
-          TAG=${GITHUB_REF#refs/tags/}
-          COMMIT_SHA=$(git rev-parse --short HEAD)
-          COMMIT_IMAGE=${REPO_OWNER}/${REPO_NAME}:${COMMIT_SHA}
-          TAG_IMAGE=${REPO_OWNER}/${REPO_NAME}:${TAG}
-          
-          echo "🔍 Checking for existing image for commit ${COMMIT_SHA}..."
-          
-          if docker manifest inspect $COMMIT_IMAGE >/dev/null 2>&1; then
-            echo "✅ Found existing image for commit ${COMMIT_SHA}"
-            echo "🏷️ Tagging ${COMMIT_IMAGE} as ${TAG_IMAGE}"
-            docker pull $COMMIT_IMAGE
-            docker tag $COMMIT_IMAGE $TAG_IMAGE
-            docker push $TAG_IMAGE
-          else
-            echo "🏗️ Building new image for RC release: $TAG from commit ${COMMIT_SHA}"
-            docker build --squash -t $COMMIT_IMAGE -t $TAG_IMAGE .
-            docker push $COMMIT_IMAGE
-            docker push $TAG_IMAGE
-          fi
-        else
-          TAG=$(echo "${{ github.sha }}" | cut -c1-7)
-          DOCKER_IMAGE=${REPO_OWNER}/${REPO_NAME}:${TAG}
-          echo "🔨 Building development version: $TAG"
-          docker build --squash -t $DOCKER_IMAGE .
-          docker push $DOCKER_IMAGE
-          
-          if [ "${UPDATE_LATEST}" = "true" ]; then
-            docker tag $DOCKER_IMAGE ${REPO_OWNER}/${REPO_NAME}:latest
-            docker push ${REPO_OWNER}/${REPO_NAME}:latest
-          fi
+        COMMIT_SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+        DOCKER_IMAGE=${REPO_OWNER}/${REPO_NAME}:${COMMIT_SHORT_SHA}
+        DOCKER_LATEST=${REPO_OWNER}/${REPO_NAME}:latest
+        
+        echo "Building images: $DOCKER_IMAGE and $DOCKER_LATEST"
+        docker build --squash -t $DOCKER_IMAGE -t $DOCKER_LATEST .
+        docker push $DOCKER_IMAGE
+        if [ "${UPDATE_LATEST}" = "true" ]; then
+          docker push $DOCKER_LATEST
         fi
