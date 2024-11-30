@@ -15,7 +15,7 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
     handlers=[
-        logging.FileHandler("./logs/conversation_threads.log"),  # Save logs to a file
+        logging.FileHandler("conversation_threads.log"),  # Save logs to a file
         logging.StreamHandler()  # Also log to console
     ]
 )
