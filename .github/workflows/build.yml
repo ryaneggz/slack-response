@@ -5,6 +5,9 @@ on:
     workflows: ["Test"]
     types:
       - completed
+  push:
+    tags:
+      - '*rc*'
 
 jobs:
   ###############################################################
@@ -12,9 +15,11 @@ jobs:
   ###############################################################
   build:
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' && github.ref == 'refs/heads/development' }}
+    if: |
+      github.event.workflow_run.conclusion == 'success' && 
+      (github.ref == 'refs/heads/development' || contains(github.ref, 'rc'))
     env:
-      UPDATE_LATEST: true
+      UPDATE_LATEST: ${{ github.ref == 'refs/heads/development' }}
       REPO_OWNER: ryaneggz
       REPO_NAME: slack-agent
       DOCKER_USERNAME: ryaneggz
@@ -34,13 +39,23 @@ jobs:
 
     - name: Build and push Docker image
       run: |
-        COMMIT_SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
-        DOCKER_IMAGE=${REPO_OWNER}/${REPO_NAME}:${COMMIT_SHORT_SHA}
+        # For RC tags, use the tag as is
+        if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+          TAG=${GITHUB_REF#refs/tags/}
+        else
+          # For development branch, use commit SHA
+          TAG=$(echo "${{ github.sha }}" | cut -c1-7)
+        fi
+        
+        DOCKER_IMAGE=${REPO_OWNER}/${REPO_NAME}:${TAG}
         DOCKER_LATEST=${REPO_OWNER}/${REPO_NAME}:latest
         
-        echo "Building images: $DOCKER_IMAGE and $DOCKER_LATEST"
-        docker build --squash -t $DOCKER_IMAGE -t $DOCKER_LATEST .
+        echo "Building image: $DOCKER_IMAGE"
+        docker build --squash -t $DOCKER_IMAGE .
         docker push $DOCKER_IMAGE
+        
         if [ "${UPDATE_LATEST}" = "true" ]; then
+          echo "Updating latest tag"
+          docker tag $DOCKER_IMAGE $DOCKER_LATEST
           docker push $DOCKER_LATEST
         fi

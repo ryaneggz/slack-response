@@ -1,7 +1,10 @@
 name: Deploy
 
 on:
-  push:
+  workflow_run:
+    workflows: ["Build"]
+    types:
+      - completed
     tags:
       - '*rc*'
 
@@ -11,7 +14,9 @@ jobs:
   ###############################################################
   deploy:
     runs-on: ubuntu-latest
-    if: ${{ contains(github.ref, 'rc') }}
+    if: |
+      github.event.workflow_run.conclusion == 'success' && 
+      contains(github.event.workflow_run.head_branch, 'rc')
     environment: Dev
     steps:
     - name: Deploy to VM
