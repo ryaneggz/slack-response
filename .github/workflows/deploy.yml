@@ -21,13 +21,12 @@ jobs:
 
     - name: Deploy to VM
       env:
-        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
         SSH_HOST: ${{ secrets.SSH_HOST }}
         SSH_USER: ${{ secrets.SSH_USER }}
       run: |
         # Setup SSH
         mkdir -p ~/.ssh
-        echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
         ssh-keyscan github.com >> ~/.ssh/known_hosts
         
@@ -37,12 +36,7 @@ jobs:
         # Extract tag from ref
         TAG=${GITHUB_REF#refs/tags/}
         
-        
         # SSH into server and deploy
         ssh -i ~/.ssh/id_rsa $SSH_USER@$SSH_HOST "
-          
           echo 'User: $(whoami)'
-          echo 'Hostname: $(hostname)'
-          echo 'OS: $(uname -a)'
-          echo 'Uptime: $(uptime -p)'
         "
