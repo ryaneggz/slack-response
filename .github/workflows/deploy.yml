@@ -43,6 +43,8 @@ jobs:
         SLACK_APP_TOKEN=${{ secrets.SLACK_APP_TOKEN }}
         SLACK_BOT_TOKEN=${{ secrets.SLACK_BOT_TOKEN }}
         BASE_API_URL=http://localhost:8000
+        APP_USERNAME=aiuser
+        APP_PASSWORD=${{ secrets.APP_PASSWORD }}
         
         # SSH into server and deploy
         ssh -i ~/.ssh/id_ed25519 $SSH_USER@$SSH_HOST "
@@ -76,6 +78,8 @@ jobs:
               -e SLACK_APP_TOKEN=$SLACK_APP_TOKEN \
               -e SLACK_BOT_TOKEN=$SLACK_BOT_TOKEN \
               -e BASE_API_URL=$BASE_API_URL \
+              -e APP_USERNAME=$APP_USERNAME \
+              -e APP_PASSWORD=$APP_PASSWORD \
               $IMAGE_NAME; then
               
               # Step 5: Verify the new container is running properly
