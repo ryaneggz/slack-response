@@ -44,10 +44,12 @@ def query_endpoint(question, thread_id=None, channel_id=None):
         "stream": False,
         "tools": channel_tools.get(channel_id, []),  # Get tools for this channel
     }
-    response = requests.post(endpoint, json=payload, headers=HEADERS)
+    username = os.getenv("APP_USERNAME", "admin")
+    password = os.getenv("APP_PASSWORD", "test1234")
+    response = requests.post(endpoint, json=payload, headers=HEADERS, auth=(username, password))
     if response.status_code == 200:
         data = response.json()
-        return data.get("thread_id"), data.get("answer", {}).get("content", "I couldn't find an answer.")
+        return data.get("thread_id"), data.get("answer", {}).get("content", "I could not find an answer.")
     else:
         return None, f"Error: {response.status_code}"
 
