@@ -72,7 +72,7 @@ jobs:
           if docker run -d \
               --name $CONTAINER_NAME \
               --restart always \
-              -p 5000:5000 \
+              --network host \
               -e SLACK_APP_TOKEN=$SLACK_APP_TOKEN \
               -e SLACK_BOT_TOKEN=$SLACK_BOT_TOKEN \
               -e BASE_API_URL=$BASE_API_URL \
