@@ -5,26 +5,21 @@ on:
     workflows: ["Build"]
     types:
       - completed
-    branches-ignore:
-      - '*'
-    tags:
-      - '*rc*'
+    branches:
+      - '*rc*'  # Use branches filter to match tag names containing 'rc'
 
 jobs:
-  ###############################################################
-  ## Deploy to VM
-  ###############################################################
   deploy:
     runs-on: ubuntu-latest
     if: |
-      github.event.workflow_run.conclusion == 'success' && 
-      contains(github.event.workflow_run.head_ref, 'refs/tags/') &&
-      contains(github.event.workflow_run.head_ref, 'rc')
+      github.event.workflow_run.conclusion == 'success' &&
+      startsWith(github.event.workflow_run.ref, 'refs/tags/') &&
+      contains(github.event.workflow_run.ref, 'rc')
     environment: Dev
     steps:
     - name: Debug workflow info
       run: |
-        echo "Workflow run head_ref: ${{ github.event.workflow_run.head_ref }}"
+        echo "Workflow run ref: ${{ github.event.workflow_run.ref }}"
         echo "Workflow run conclusion: ${{ github.event.workflow_run.conclusion }}"
         echo "Event name: ${{ github.event_name }}"
         echo "Ref: ${{ github.ref }}"
