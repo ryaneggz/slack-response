@@ -27,27 +27,28 @@ jobs:
           username: ryaneggz
           password: ${{ env.DOCKER_PASSWORD }}
 
-      - name: Cache Docker layers
-        uses: actions/cache@v3
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-docker-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-docker-
-
       - name: Get short commit SHA
         id: vars
         run: echo "COMMIT_SHORT_SHA=$(git rev-parse --short ${{ github.event.workflow_run.head_sha }})" >> $GITHUB_ENV
 
-      - name: Build and push Docker image
+      - name: Attempt to pull Docker image
+        id: pull_image
         run: |
           DOCKER_IMAGE=ryaneggz/slack-agent:${COMMIT_SHORT_SHA}
+          if docker pull $DOCKER_IMAGE; then
+            echo "Image $DOCKER_IMAGE exists. No need to build."
+            echo "IMAGE_EXISTS=true" >> $GITHUB_ENV
+          else
+            echo "Image $DOCKER_IMAGE does not exist. Proceeding to build."
+            echo "IMAGE_EXISTS=false" >> $GITHUB_ENV
+          fi
 
-          echo "Building images: $DOCKER_IMAGE"
-          docker build --cache-from=type=local,src=/tmp/.buildx-cache \
-                       --cache-to=type=local,dest=/tmp/.buildx-cache \
-                       --squash \
-                       -t $DOCKER_IMAGE \
+      - name: Build and push Docker image
+        if: env.IMAGE_EXISTS == 'false'
+        run: |
+          DOCKER_IMAGE=ryaneggz/slack-agent:${COMMIT_SHORT_SHA}
+          echo "Building image: $DOCKER_IMAGE"
+          docker build -t $DOCKER_IMAGE \
                        -t ryaneggz/slack-agent:latest .
           docker push $DOCKER_IMAGE
           docker push ryaneggz/slack-agent:latest
