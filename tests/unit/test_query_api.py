@@ -1,7 +1,8 @@
+from main import CHAT_ENDPOINT, HEADERS, SYSTEM_PROMPT
 import unittest
 from unittest.mock import patch, MagicMock
 import os
-from main import query_endpoint
+from main import query_endpoint, CHAT_ENDPOINT, HEADERS, SYSTEM_PROMPT
 
 class TestQueryEndpoint(unittest.TestCase):
 
@@ -31,7 +32,17 @@ class TestQueryEndpoint(unittest.TestCase):
         self.assertEqual(answer, 'Test answer')
 
         # Check if post was called with correct arguments
-        mock_post.assert_called_once()
+        mock_post.assert_called_once_with(
+            f"{CHAT_ENDPOINT}/test_thread",
+            json={
+                "system": SYSTEM_PROMPT,
+                "query": "Test question",
+                "stream": False,
+                "tools": []
+            },
+            headers=HEADERS,
+            auth=("test_user", "test_pass")
+        )
         call_args = mock_post.call_args
         self.assertIn('auth', call_args.kwargs)
         self.assertEqual(call_args.kwargs['auth'], ('test_user', 'test_pass'))
@@ -48,18 +59,25 @@ class TestQueryEndpoint(unittest.TestCase):
         mock_post.return_value = mock_response
 
         # Call the function
-        thread_id, answer = query_endpoint('Test question')
+        thread_id, answer = query_endpoint("Test question")
 
         # Assertions
         self.assertIsNone(thread_id)
-        self.assertEqual(answer, 'Error: 404')
+        self.assertEqual(answer, "Error: 404")
 
         # Check if post was called with correct arguments
-        mock_post.assert_called_once()
-        call_args = mock_post.call_args
-        self.assertIn('auth', call_args.kwargs)
-        self.assertEqual(call_args.kwargs['auth'], ('admin', 'test1234'))
+        mock_post.assert_called_once_with(
+            CHAT_ENDPOINT,
+            json={
+                "system": SYSTEM_PROMPT,
+                "query": "Test question",
+                "stream": False,
+                "tools": []
+            },
+            headers=HEADERS,
+            auth=("admin", "test1234")
+        )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
 EOL;cat tests/unit/test_query_api.py
