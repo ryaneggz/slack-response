@@ -80,4 +80,3 @@ class TestQueryEndpoint(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-EOL;cat tests/unit/test_query_api.py
