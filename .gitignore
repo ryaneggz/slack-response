@@ -15,7 +15,6 @@ docker/postgres/data
 Dockerfile
 README.md
 docker*
-scripts
 langgraph.json
 .dockerignore
 .cursorignore
