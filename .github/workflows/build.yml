@@ -10,9 +10,6 @@ on:
       - '*rc*'
 
 jobs:
-  ###############################################################
-  ## Build Docker Image
-  ###############################################################
   build:
     runs-on: ubuntu-latest
     if: |
@@ -27,6 +24,15 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
+      with:
+        ref: ${{ github.event.push.before || github.sha }}
+
+    - name: Get commit info
+      run: |
+        echo "Building from commit: $(git rev-parse HEAD)"
+        echo "Commit message: $(git log -1 --pretty=%B)"
+        echo "Author: $(git log -1 --pretty=%an)"
+        echo "Date: $(git log -1 --pretty=%ad)"
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
@@ -37,25 +43,37 @@ jobs:
         username: ${{ env.DOCKER_USERNAME }}
         password: ${{ env.DOCKER_PASSWORD }}
 
-    - name: Build and push Docker image
+    - name: Check and build Docker image
       run: |
-        # For RC tags, use the tag as is
         if [[ "${{ github.ref }}" == refs/tags/* ]]; then
           TAG=${GITHUB_REF#refs/tags/}
+          COMMIT_SHA=$(git rev-parse --short HEAD)
+          COMMIT_IMAGE=${REPO_OWNER}/${REPO_NAME}:${COMMIT_SHA}
+          TAG_IMAGE=${REPO_OWNER}/${REPO_NAME}:${TAG}
+          
+          echo "🔍 Checking for existing image for commit ${COMMIT_SHA}..."
+          
+          if docker manifest inspect $COMMIT_IMAGE >/dev/null 2>&1; then
+            echo "✅ Found existing image for commit ${COMMIT_SHA}"
+            echo "🏷️ Tagging ${COMMIT_IMAGE} as ${TAG_IMAGE}"
+            docker pull $COMMIT_IMAGE
+            docker tag $COMMIT_IMAGE $TAG_IMAGE
+            docker push $TAG_IMAGE
+          else
+            echo "🏗️ Building new image for RC release: $TAG from commit ${COMMIT_SHA}"
+            docker build --squash -t $COMMIT_IMAGE -t $TAG_IMAGE .
+            docker push $COMMIT_IMAGE
+            docker push $TAG_IMAGE
+          fi
         else
-          # For development branch, use commit SHA
           TAG=$(echo "${{ github.sha }}" | cut -c1-7)
-        fi
-        
-        DOCKER_IMAGE=${REPO_OWNER}/${REPO_NAME}:${TAG}
-        DOCKER_LATEST=${REPO_OWNER}/${REPO_NAME}:latest
-        
-        echo "Building image: $DOCKER_IMAGE"
-        docker build --squash -t $DOCKER_IMAGE .
-        docker push $DOCKER_IMAGE
-        
-        if [ "${UPDATE_LATEST}" = "true" ]; then
-          echo "Updating latest tag"
-          docker tag $DOCKER_IMAGE $DOCKER_LATEST
-          docker push $DOCKER_LATEST
+          DOCKER_IMAGE=${REPO_OWNER}/${REPO_NAME}:${TAG}
+          echo "🔨 Building development version: $TAG"
+          docker build --squash -t $DOCKER_IMAGE .
+          docker push $DOCKER_IMAGE
+          
+          if [ "${UPDATE_LATEST}" = "true" ]; then
+            docker tag $DOCKER_IMAGE ${REPO_OWNER}/${REPO_NAME}:latest
+            docker push ${REPO_OWNER}/${REPO_NAME}:latest
+          fi
         fi
