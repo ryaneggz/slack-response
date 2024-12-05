@@ -22,6 +22,8 @@ logging.basicConfig(
 
 
 # Endpoint configuration
+APP_USERNAME = os.getenv("APP_USERNAME", "admin")
+APP_PASSWORD = os.getenv("APP_PASSWORD", "test1234")
 BASE_API_URL = os.environ.get("BASE_API_URL", "https://graphchat.promptengineers.ai")
 CHAT_ENDPOINT = f"{BASE_API_URL}/llm"
 TOOLS_ENDPOINT = f"{BASE_API_URL}/tools"
@@ -46,7 +48,7 @@ def query_endpoint(question, thread_id=None, channel_id=None):
     }
     username = os.getenv("APP_USERNAME", "admin")
     password = os.getenv("APP_PASSWORD", "test1234")
-    response = requests.post(endpoint, json=payload, headers=HEADERS, auth=(username, password))
+    response = requests.post(endpoint, json=payload, headers=HEADERS, auth=(APP_USERNAME, APP_PASSWORD))
     if response.status_code == 200:
         data = response.json()
         return data.get("thread_id"), data.get("answer", {}).get("content", "I could not find an answer.")
@@ -100,7 +102,7 @@ def handle_app_mention(event, say):
 
     # Check if user wants to see available tools
     if "$list_tools" in text.lower():
-        response = requests.get(TOOLS_ENDPOINT, headers=HEADERS)
+        response = requests.get(TOOLS_ENDPOINT, headers=HEADERS, auth=(APP_USERNAME, APP_PASSWORD))
         if response.status_code == 200:
             tools = response.json().get("tools", [])
             tools_list = "\n- ".join(tools)  # Create the string separately
