@@ -46,8 +46,7 @@ def query_endpoint(question, thread_id=None, channel_id=None):
         "stream": False,
         "tools": channel_tools.get(channel_id, []),  # Get tools for this channel
     }
-    username = os.getenv("APP_USERNAME", "admin")
-    password = os.getenv("APP_PASSWORD", "test1234")
+
     response = requests.post(endpoint, json=payload, headers=HEADERS, auth=(APP_USERNAME, APP_PASSWORD))
     if response.status_code == 200:
         data = response.json()
