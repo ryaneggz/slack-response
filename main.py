@@ -35,13 +35,14 @@ HEADERS = {
 # In-memory storage for thread IDs and tools
 conversation_threads = {}
 channel_tools = {}  # New dictionary to store tools per channel
+channel_system_messages = {}  # New dictionary to store system messages per channel
 
 SYSTEM_PROMPT = ("You are a helpful Slack assistant. Be concise and to the point.")
 # Function to send a query to the API
 def query_endpoint(question, thread_id=None, channel_id=None):
     endpoint = f"{CHAT_ENDPOINT}/{thread_id}" if thread_id else CHAT_ENDPOINT
     payload = {
-        "system": SYSTEM_PROMPT,
+        "system": channel_system_messages.get(channel_id, SYSTEM_PROMPT),  # Get channel-specific system message or default
         "query": question,
         "stream": False,
         "tools": channel_tools.get(channel_id, []),  # Get tools for this channel
@@ -70,7 +71,7 @@ def handle_app_mention(event, say):
             say("No tools are currently set for this channel.")
         return
 
-    # Check for $settools command
+    # Check for $set_tools command
     if "$set_tools" in text.lower():
         tools_input = text.split("$set_tools", 1)[1].strip()
         if tools_input:
@@ -89,6 +90,33 @@ def handle_app_mention(event, say):
             say("Tools have been cleared for this channel.")
         else:
             say("No tools were set for this channel.")
+        return
+
+    # Check for $set_system command
+    if "$set_system" in text.lower():
+        system_message = text.split("$set_system", 1)[1].strip()
+        if system_message:
+            channel_system_messages[channel_id] = system_message
+            say(f"System message set for this channel:\n```\n{system_message}\n```")
+        else:
+            say("Please provide a system message. Example: $set_system You are a helpful assistant.")
+        return
+
+    # Check for $get_system command
+    if "$get_system" in text.lower():
+        if channel_id in channel_system_messages:
+            say(f"Current system message for this channel:\n```\n{channel_system_messages[channel_id]}\n```")
+        else:
+            say(f"Using default system message:\n```\n{SYSTEM_PROMPT}\n```")
+        return
+
+    # Check for $clear_system command
+    if "$clear_system" in text.lower():
+        if channel_id in channel_system_messages:
+            del channel_system_messages[channel_id]
+            say("System message has been cleared for this channel. Using default message.")
+        else:
+            say("No custom system message was set for this channel.")
         return
 
     # Check if the user wants to reset the thread
