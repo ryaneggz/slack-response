@@ -4,6 +4,7 @@ import requests
 from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 from dotenv import load_dotenv
+import base64
 
 load_dotenv()
 
@@ -39,13 +40,14 @@ channel_system_messages = {}  # New dictionary to store system messages per chan
 
 SYSTEM_PROMPT = ("You are a helpful Slack assistant. Be concise and to the point.")
 # Function to send a query to the API
-def query_endpoint(question, thread_id=None, channel_id=None):
+def query_endpoint(question, thread_id=None, channel_id=None, images=None):
     endpoint = f"{CHAT_ENDPOINT}/{thread_id}" if thread_id else CHAT_ENDPOINT
     payload = {
         "system": channel_system_messages.get(channel_id, SYSTEM_PROMPT),  # Get channel-specific system message or default
         "query": question,
         "stream": False,
         "tools": channel_tools.get(channel_id, []),  # Get tools for this channel
+        "images": images or []  # Add images list to payload
     }
 
     response = requests.post(endpoint, json=payload, headers=HEADERS, auth=(APP_USERNAME, APP_PASSWORD))
@@ -61,6 +63,22 @@ def handle_app_mention(event, say):
     channel_id = event["channel"]
     user_id = event["user"]
     text = event["text"]
+    
+    # Extract images from the event
+    images = []
+    if "files" in event:
+        for file in event["files"]:
+            if file["mimetype"].startswith("image/"):
+                # Get the file URL - prefer private URL if available
+                image_url = file.get("url_private") or file.get("url_private_download") or file.get("url")
+                if image_url:
+                    # Add authorization header for private files
+                    headers = {"Authorization": f"Bearer {os.environ.get('SLACK_BOT_TOKEN')}"}
+                    # Download the image and convert to base64
+                    response = requests.get(image_url, headers=headers)
+                    if response.status_code == 200:
+                        image_base64 = base64.b64encode(response.content).decode('utf-8')
+                        images.append(f"data:{file['mimetype']};base64,{image_base64}")
 
     # Check for $get_tools command
     if "$get_tools" in text.lower():
@@ -140,16 +158,18 @@ def handle_app_mention(event, say):
             say(f"Error fetching tools: {response.status_code}")
         return
 
-    # Extract the query, assuming it's the text after the mention
+    # Extract the query
     question = text.split(maxsplit=1)[-1] if len(text.split()) > 1 else "What can I help you with?"
 
     # Check if there's an existing thread for this channel
     thread_id = conversation_threads.get(channel_id)
 
     print(f"Received question from USER <@{user_id}> in CHANNEL <#{channel_id}>: {question} (Thread ID: {thread_id})")
+    if images:
+        print(f"Received {len(images)} images with the query")
 
-    # Query the API
-    new_thread_id, response = query_endpoint(question, thread_id, channel_id)
+    # Query the API with images
+    new_thread_id, response = query_endpoint(question, thread_id, channel_id, images)
 
     # Update thread context
     if new_thread_id:
