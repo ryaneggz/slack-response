@@ -63,6 +63,7 @@ def handle_app_mention(event, say):
     channel_id = event["channel"]
     user_id = event["user"]
     text = event["text"]
+    BASE64_ENCODE = True
     
     # Extract images from the event
     images = []
@@ -70,16 +71,19 @@ def handle_app_mention(event, say):
         for file in event["files"]:
             if file["mimetype"].startswith("image/"):
                 # Get the file URL - prefer private URL if available
-                image_url = file.get("url_private") or file.get("url_private_download") or file.get("url")
+                image_url = file.get("url_private_download")
                 if image_url:
-                    # Add authorization header for private files
-                    headers = {"Authorization": f"Bearer {os.environ.get('SLACK_BOT_TOKEN')}"}
-                    # Download the image and convert to base64
-                    response = requests.get(image_url, headers=headers)
-                    if response.status_code == 200:
-                        image_base64 = base64.b64encode(response.content).decode('utf-8')
-                        images.append(f"data:{file['mimetype']};base64,{image_base64}")
-
+                    if BASE64_ENCODE:
+                        # Add authorization header for private files
+                        headers = {"Authorization": f"Bearer {os.environ.get('SLACK_BOT_TOKEN')}"}
+                        # Download the image with proper headers
+                        response = requests.get(image_url, headers=headers)
+                        if response.status_code == 200:
+                            image_base64 = base64.b64encode(response.content).decode('utf-8')
+                            images.append(f"data:{file['mimetype']};base64,{image_base64}")
+                    else:
+                        images.append(image_url)
+                        
     # Check for $get_tools command
     if "$get_tools" in text.lower():
         if channel_id in channel_tools and channel_tools[channel_id]:
