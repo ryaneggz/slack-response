@@ -4,6 +4,7 @@ import requests
 from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 from dotenv import load_dotenv
+import base64
 
 load_dotenv()
 
@@ -39,13 +40,14 @@ channel_system_messages = {}  # New dictionary to store system messages per chan
 
 SYSTEM_PROMPT = ("You are a helpful Slack assistant. Be concise and to the point.")
 # Function to send a query to the API
-def query_endpoint(question, thread_id=None, channel_id=None):
+def query_endpoint(question, thread_id=None, channel_id=None, images=None):
     endpoint = f"{CHAT_ENDPOINT}/{thread_id}" if thread_id else CHAT_ENDPOINT
     payload = {
         "system": channel_system_messages.get(channel_id, SYSTEM_PROMPT),  # Get channel-specific system message or default
         "query": question,
         "stream": False,
         "tools": channel_tools.get(channel_id, []),  # Get tools for this channel
+        "images": images or []  # Add images list to payload
     }
 
     response = requests.post(endpoint, json=payload, headers=HEADERS, auth=(APP_USERNAME, APP_PASSWORD))
@@ -61,7 +63,27 @@ def handle_app_mention(event, say):
     channel_id = event["channel"]
     user_id = event["user"]
     text = event["text"]
-
+    BASE64_ENCODE = True
+    
+    # Extract images from the event
+    images = []
+    if "files" in event:
+        for file in event["files"]:
+            if file["mimetype"].startswith("image/"):
+                # Get the file URL - prefer private URL if available
+                image_url = file.get("url_private_download")
+                if image_url:
+                    if BASE64_ENCODE:
+                        # Add authorization header for private files
+                        headers = {"Authorization": f"Bearer {os.environ.get('SLACK_BOT_TOKEN')}"}
+                        # Download the image with proper headers
+                        response = requests.get(image_url, headers=headers)
+                        if response.status_code == 200:
+                            image_base64 = base64.b64encode(response.content).decode('utf-8')
+                            images.append(f"data:{file['mimetype']};base64,{image_base64}")
+                    else:
+                        images.append(image_url)
+                        
     # Check for $get_tools command
     if "$get_tools" in text.lower():
         if channel_id in channel_tools and channel_tools[channel_id]:
@@ -132,22 +154,26 @@ def handle_app_mention(event, say):
         response = requests.get(TOOLS_ENDPOINT, headers=HEADERS, auth=(APP_USERNAME, APP_PASSWORD))
         if response.status_code == 200:
             tools = response.json().get("tools", [])
-            tools_list = "\n- ".join(tools)  # Create the string separately
-            say(f"Available tools:\n- {tools_list}")  # Use the formatted string
+            # Extract tool names from the dictionary objects
+            tool_names = [tool.get("id", str(tool)) for tool in tools]
+            tools_list = "\n- ".join(tool_names)
+            say(f"Available tools:\n- {tools_list}")
         else:
             say(f"Error fetching tools: {response.status_code}")
         return
 
-    # Extract the query, assuming it's the text after the mention
+    # Extract the query
     question = text.split(maxsplit=1)[-1] if len(text.split()) > 1 else "What can I help you with?"
 
     # Check if there's an existing thread for this channel
     thread_id = conversation_threads.get(channel_id)
 
     print(f"Received question from USER <@{user_id}> in CHANNEL <#{channel_id}>: {question} (Thread ID: {thread_id})")
+    if images:
+        print(f"Received {len(images)} images with the query")
 
-    # Query the API
-    new_thread_id, response = query_endpoint(question, thread_id, channel_id)
+    # Query the API with images
+    new_thread_id, response = query_endpoint(question, thread_id, channel_id, images)
 
     # Update thread context
     if new_thread_id:
@@ -159,17 +185,15 @@ def handle_app_mention(event, say):
 
     say(response)
 
-# # Listener for a reset command
-# @app.message("$reset")
-# def reset_thread_context(message, say):
-#     channel_id = message["channel"]
-
-#     if channel_id in conversation_threads:
-#         del conversation_threads[channel_id]
-#         logging.info(f"Thread reset for channel: {channel_id}")
-#         say(f"Thread context has been reset for channel <#{channel_id}>.")
-#     else:
-#         say(f"No active thread to reset for channel <#{channel_id}>.")
+# Add a general message event handler
+@app.event("message")
+def handle_message_events(body, logger):
+    # Skip messages that are from bots or app mentions (which are already handled)
+    if body["event"].get("subtype") or "bot_id" in body["event"]:
+        return
+    
+    # Log the message for debugging
+    logger.info(f"Received message event: {body}")
 
 # Listens to incoming messages that contain "hello"
 @app.message("hello")
