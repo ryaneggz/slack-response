@@ -132,8 +132,10 @@ def handle_app_mention(event, say):
         response = requests.get(TOOLS_ENDPOINT, headers=HEADERS, auth=(APP_USERNAME, APP_PASSWORD))
         if response.status_code == 200:
             tools = response.json().get("tools", [])
-            tools_list = "\n- ".join(tools)  # Create the string separately
-            say(f"Available tools:\n- {tools_list}")  # Use the formatted string
+            # Extract tool names from the dictionary objects
+            tool_names = [tool.get("id", str(tool)) for tool in tools]
+            tools_list = "\n- ".join(tool_names)
+            say(f"Available tools:\n- {tools_list}")
         else:
             say(f"Error fetching tools: {response.status_code}")
         return
@@ -159,17 +161,15 @@ def handle_app_mention(event, say):
 
     say(response)
 
-# # Listener for a reset command
-# @app.message("$reset")
-# def reset_thread_context(message, say):
-#     channel_id = message["channel"]
-
-#     if channel_id in conversation_threads:
-#         del conversation_threads[channel_id]
-#         logging.info(f"Thread reset for channel: {channel_id}")
-#         say(f"Thread context has been reset for channel <#{channel_id}>.")
-#     else:
-#         say(f"No active thread to reset for channel <#{channel_id}>.")
+# Add a general message event handler
+@app.event("message")
+def handle_message_events(body, logger):
+    # Skip messages that are from bots or app mentions (which are already handled)
+    if body["event"].get("subtype") or "bot_id" in body["event"]:
+        return
+    
+    # Log the message for debugging
+    logger.info(f"Received message event: {body}")
 
 # Listens to incoming messages that contain "hello"
 @app.message("hello")
