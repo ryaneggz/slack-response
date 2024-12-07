@@ -11,6 +11,66 @@ def handle_documents(event, say):
     
     handled = False
     
+    # Upload document command
+    if "$upload_doc" in text.lower():
+        if "files" in event:
+            success_count = 0
+            uploaded_docs = []
+            for file in event["files"]:
+                # Download file using Slack's API with authentication
+                file_url = file.get("url_private_download")
+                if file_url:
+                    # Download the file with Slack authentication
+                    file_response = requests.get(
+                        file_url,
+                        headers={"Authorization": f"Bearer {SLACK_BOT_TOKEN}"}
+                    )
+                    
+                    if file_response.status_code == 200:
+                        # Prepare the file for upload
+                        files = {
+                            'files': (
+                                file['name'],
+                                file_response.content,
+                                file['mimetype']
+                            )
+                        }
+                        
+                        # Upload to your API
+                        upload_response = requests.post(
+                            f"{BASE_API_URL}/sources/upload",
+                            files=files,
+                            headers={"accept": "application/json"},
+                            auth=(APP_USERNAME, APP_PASSWORD)
+                        )
+                        
+                        if not upload_response.status_code == 200:
+                            say(f"Error uploading {file['name']}: {upload_response.status_code}")
+                            break
+                        
+                        response = requests.post(
+                            f"{BASE_API_URL}/documents", 
+                            json=upload_response.json(), 
+                            headers=HEADERS, 
+                            auth=(APP_USERNAME, APP_PASSWORD)
+                        )
+                        
+                        if response.status_code == 200:
+                            success_count += 1
+                            uploaded_docs.extend(response.json()['documents'])
+                        else:
+                            say(f"Error creating document for {file['name']}: {response.status_code}")
+                            break
+            
+            if success_count > 0:
+                doc_list = "\n".join([f"• {doc}" for doc in uploaded_docs])
+                say(f"Successfully uploaded {success_count} source(s):\n{doc_list}")
+            else:
+                say("No documents were uploaded successfully")
+        else:
+            say("Please attach files to upload with the $upload_doc command")
+        handled = True
+    
     # Add document command
     if "$add_doc" in text.lower():
         # Split on first occurrence of $add_doc to get the rest of the message

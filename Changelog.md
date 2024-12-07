@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## v0.1.0
 
 ### Changed 
+  - feature/22-doc-from-files-over-slack (2024-12-07)
   - feature/20-doc-retrieval (2024-12-07)
   - feature/18-help-handler (2024-12-07)
   - feature/16-consolidate-entrypoint-code (2024-12-07)
