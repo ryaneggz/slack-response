@@ -1,61 +1,23 @@
 import os
-import logging
 import requests
 from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 from dotenv import load_dotenv
-import base64
-
 load_dotenv()
 
+from src.config import *
+from src.utils.api import query_endpoint
+from src.utils.logger import logger
+from src.utils.process import process_images
+
+
 # Initialize the app with your bot token
-app = App(token=os.environ.get("SLACK_BOT_TOKEN"))
-
-# Setup logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    handlers=[
-        logging.FileHandler("conversation_threads.log"),  # Save logs to a file
-        logging.StreamHandler()  # Also log to console
-    ]
-)
-
-
-# Endpoint configuration
-APP_USERNAME = os.getenv("APP_USERNAME", "admin")
-APP_PASSWORD = os.getenv("APP_PASSWORD", "test1234")
-BASE_API_URL = os.environ.get("BASE_API_URL", "https://graphchat.promptengineers.ai")
-CHAT_ENDPOINT = f"{BASE_API_URL}/llm"
-TOOLS_ENDPOINT = f"{BASE_API_URL}/tools"
-HEADERS = {
-    "accept": "application/json",
-    "Content-Type": "application/json",
-}
+app = App(token=SLACK_BOT_TOKEN)
 
 # In-memory storage for thread IDs and tools
 conversation_threads = {}
 channel_tools = {}  # New dictionary to store tools per channel
 channel_system_messages = {}  # New dictionary to store system messages per channel
-
-SYSTEM_PROMPT = ("You are a helpful Slack assistant. Be concise and to the point.")
-# Function to send a query to the API
-def query_endpoint(question, thread_id=None, channel_id=None, images=None):
-    endpoint = f"{CHAT_ENDPOINT}/{thread_id}" if thread_id else CHAT_ENDPOINT
-    payload = {
-        "system": channel_system_messages.get(channel_id, SYSTEM_PROMPT),  # Get channel-specific system message or default
-        "query": question,
-        "stream": False,
-        "tools": channel_tools.get(channel_id, []),  # Get tools for this channel
-        "images": images or []  # Add images list to payload
-    }
-
-    response = requests.post(endpoint, json=payload, headers=HEADERS, auth=(APP_USERNAME, APP_PASSWORD))
-    if response.status_code == 200:
-        data = response.json()
-        return data.get("thread_id"), data.get("answer", {}).get("content", "I could not find an answer.")
-    else:
-        return None, f"Error: {response.status_code}"
 
 # Listener for messages where the bot is tagged
 @app.event("app_mention")
@@ -63,26 +25,9 @@ def handle_app_mention(event, say):
     channel_id = event["channel"]
     user_id = event["user"]
     text = event["text"]
-    BASE64_ENCODE = True
-    
+
     # Extract images from the event
-    images = []
-    if "files" in event:
-        for file in event["files"]:
-            if file["mimetype"].startswith("image/"):
-                # Get the file URL - prefer private URL if available
-                image_url = file.get("url_private_download")
-                if image_url:
-                    if BASE64_ENCODE:
-                        # Add authorization header for private files
-                        headers = {"Authorization": f"Bearer {os.environ.get('SLACK_BOT_TOKEN')}"}
-                        # Download the image with proper headers
-                        response = requests.get(image_url, headers=headers)
-                        if response.status_code == 200:
-                            image_base64 = base64.b64encode(response.content).decode('utf-8')
-                            images.append(f"data:{file['mimetype']};base64,{image_base64}")
-                    else:
-                        images.append(image_url)
+    images = process_images(event)
                         
     # Check for $get_tools command
     if "$get_tools" in text.lower():
@@ -100,6 +45,7 @@ def handle_app_mention(event, say):
             tools_list = [tool.strip() for tool in tools_input.split(",")]
             channel_tools[channel_id] = tools_list  # Store the tools for this channel
             formatted_tools = "\n- ".join(tools_list)
+            logger.info(f"Tools set for channel {channel_id}: {formatted_tools}")
             say(f"Tools set for this channel:\n- {formatted_tools}")
         else:
             say("Please provide tools separated by commas. Example: $settools tool1, tool2, tool3")
@@ -109,6 +55,7 @@ def handle_app_mention(event, say):
     if "$clear_tools" in text.lower():
         if channel_id in channel_tools:
             del channel_tools[channel_id]
+            logger.info(f"Tools cleared for channel {channel_id}")
             say("Tools have been cleared for this channel.")
         else:
             say("No tools were set for this channel.")
@@ -119,6 +66,7 @@ def handle_app_mention(event, say):
         system_message = text.split("$set_system", 1)[1].strip()
         if system_message:
             channel_system_messages[channel_id] = system_message
+            logger.info(f"System message set for channel {channel_id}: {system_message}")
             say(f"System message set for this channel:\n```\n{system_message}\n```")
         else:
             say("Please provide a system message. Example: $set_system You are a helpful assistant.")
@@ -136,6 +84,7 @@ def handle_app_mention(event, say):
     if "$clear_system" in text.lower():
         if channel_id in channel_system_messages:
             del channel_system_messages[channel_id]
+            logger.info(f"System message cleared for channel {channel_id}")
             say("System message has been cleared for this channel. Using default message.")
         else:
             say("No custom system message was set for this channel.")
@@ -145,7 +94,7 @@ def handle_app_mention(event, say):
     if "$reset" in text.lower():
         if channel_id in conversation_threads:
             del conversation_threads[channel_id]
-        logging.info(f"Thread reset for channel: {channel_id}")
+        logger.info(f"Thread reset for channel: {channel_id}")
         say(f"Thread context has been reset for channel <#{channel_id}>.")
         return
 
@@ -173,15 +122,22 @@ def handle_app_mention(event, say):
         print(f"Received {len(images)} images with the query")
 
     # Query the API with images
-    new_thread_id, response = query_endpoint(question, thread_id, channel_id, images)
+    new_thread_id, response = query_endpoint(
+        question, 
+        thread_id, 
+        channel_id, 
+        images, 
+        channel_system_messages, 
+        channel_tools
+    )
 
     # Update thread context
     if new_thread_id:
         conversation_threads[channel_id] = new_thread_id
-        logging.info(f"New thread ID for channel {channel_id}: {new_thread_id}")
+        logger.info(f"New thread ID for channel {channel_id}: {new_thread_id}")
 
     # Log the query and response for tracking
-    logging.info(f"Channel: {channel_id}, User: {user_id}, Query: {question}, Thread ID: {thread_id}, Response: {response}")
+    logger.info(f"Channel: {channel_id}, User: {user_id}, Query: {question}, Thread ID: {thread_id}, Response: {response}")
 
     say(response)
 
@@ -202,6 +158,6 @@ def message_hello(message, say):
 
 # Start the app
 if __name__ == "__main__":
-    logging.info(f"Starting Slack bot with client at {BASE_API_URL}")
+    logger.info(f"Starting Slack bot with client at {BASE_API_URL}")
     handler = SocketModeHandler(app, os.environ.get("SLACK_APP_TOKEN"))
     handler.start()
