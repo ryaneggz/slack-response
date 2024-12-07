@@ -1,13 +1,13 @@
 import requests
 
 from src.config import *
-from src.commands import event_data
 from src.utils.logger import logger
 
 #####################################################################
 ## Tool command handler
 #####################################################################
 def handle_tools(event, say, channel_tools):
+    from src.commands import event_data
     channel_id, _, text = event_data(event)
     
     handled = False

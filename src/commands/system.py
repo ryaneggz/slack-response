@@ -1,4 +1,3 @@
-from src.commands import event_data
 from src.utils.logger import logger
 from src.config import *
 
@@ -6,6 +5,7 @@ from src.config import *
 ## System command handler
 #####################################################################
 def handle_system(event, say, channel_system_messages):
+    from src.commands import event_data
     channel_id, _, text = event_data(event)
     
     handled = False
