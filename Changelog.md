@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## v0.1.0
 
 ### Changed 
+  - feature/18-help-handler (2024-12-07)
   - feature/16-consolidate-entrypoint-code (2024-12-07)
   - feature/14-pass-images (2024-12-05)
   - feature/12-can-set-system-message (2024-12-04)

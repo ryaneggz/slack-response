@@ -1,10 +1,10 @@
-from src.commands import event_data
 from src.utils.logger import logger
 
 #####################################################################
 ## Thread command handler
 #####################################################################
 def handle_thread(event, say, conversation_threads):
+    from src.commands import event_data
     channel_id, _, text = event_data(event)
     
     handled = False
