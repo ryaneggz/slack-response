@@ -38,5 +38,5 @@ def handle_message_events(body, logger):
 #####################################################################
 if __name__ == "__main__":
     logger.info(f"Starting Slack bot with client at {BASE_API_URL}")
-    handler = SocketModeHandler(app, os.environ.get("SLACK_APP_TOKEN"))
+    handler = SocketModeHandler(app, SLACK_BOT_TOKEN)
     handler.start() 
