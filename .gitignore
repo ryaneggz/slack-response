@@ -17,7 +17,6 @@ README.md
 docker*
 langgraph.json
 .dockerignore
-.cursorignore
 .vscode
 .example.env
 docs
