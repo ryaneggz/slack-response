@@ -16,19 +16,8 @@ __pycache__
 .git
 .gitignore
 
-# VS Code
-.vscode
-
-# Docker
-Dockerfile
-docker-compose.yml
-.dockerignore
-
 # Scripts
 scripts/
-
-# Documentation
-README.md
 
 .env*
 .venv
@@ -36,17 +25,8 @@ sandbox/graphs/*
 **/__pycache__/
 sandbox/docs
 docker/postgres/data
-Dockerfile
-README.md
 docker*
 scripts
-langgraph.json
-.dockerignore
-.cursorignore
-.vscode
 .git*
 .example.env
-docs
-deployment
 logs/
-tests

@@ -66,33 +66,14 @@ BASE_API_URL=http://localhost:8000
 - Reset conversation context
 - Logging to both file and console
 - Responds to:
-  - Direct mentions (@bot)
-  - "hello" messages
+  - Direct mentions (@bot $help)
   - Various commands (see Commands section)
 
 ## Commands
 
 All commands must be used with a bot mention (@bot):
 
-- `$reset` - Reset the conversation context for the current channel
-- `$list_tools` - Display all available tools
-- `$set_tools tool1, tool2, tool3` - Set specific tools for the current channel
-- `$get_tools` - Show currently selected tools for the channel
-- `$clear_tools` - Remove all tools from the current channel
-
-
-## Usage
-
-1. Mention the bot: `@bot <your question>`
-2. Reset conversation: `@bot $reset`
-3. Say hello: Just type `hello` in any channel where the bot is present
-4. Manage tools:
-   ```
-   @bot $list_tools
-   @bot $set_tools python, javascript, bash
-   @bot $get_tools
-   @bot $clear_tools
-   ```
+- `$help` - Will show how to utilize the agent configuration commands.
 
 ## Development
 

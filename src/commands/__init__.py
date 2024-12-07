@@ -3,6 +3,7 @@ from src.commands.thread import handle_thread
 from src.commands.tool import handle_tools
 from src.commands.system import handle_system
 from src.commands.help import handle_help
+from src.commands.document import handle_documents
 
 #####################################################################
 ## Event data
@@ -33,6 +34,10 @@ def handle_command(event, say, channel_tools, channel_system_messages, conversat
             return handled
         
         handled = handle_system(event, say, channel_system_messages)
+        if handled:
+            return handled
+            
+        handled = handle_documents(event, say)
         if handled:
             return handled
             
