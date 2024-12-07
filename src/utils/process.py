@@ -1,6 +1,6 @@
 import requests
 import base64
-import os
+from src.config import *
 
 def process_images(event, BASE64_ENCODE=True):
     try:
@@ -14,7 +14,7 @@ def process_images(event, BASE64_ENCODE=True):
                     if image_url:
                         if BASE64_ENCODE:
                             # Add authorization header for private files
-                            headers = {"Authorization": f"Bearer {os.environ.get('SLACK_BOT_TOKEN')}"}
+                            headers = {"Authorization": f"Bearer {SLACK_BOT_TOKEN}"}
                             # Download the image with proper headers
                             response = requests.get(image_url, headers=headers)
                             if response.status_code == 200:
