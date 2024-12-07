@@ -1,5 +1,4 @@
 import os
-import requests
 from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 from dotenv import load_dotenv
@@ -7,6 +6,7 @@ load_dotenv()
 
 from src.config import *
 from src.utils.api import query_endpoint
+from src.utils.commands import event_data, handle_command
 from src.utils.logger import logger
 from src.utils.process import process_images
 
@@ -22,94 +22,14 @@ channel_system_messages = {}  # New dictionary to store system messages per chan
 # Listener for messages where the bot is tagged
 @app.event("app_mention")
 def handle_app_mention(event, say):
-    channel_id = event["channel"]
-    user_id = event["user"]
-    text = event["text"]
+    # Extract data from the event
+    channel_id, user_id, text = event_data(event)
 
     # Extract images from the event
     images = process_images(event)
-                        
-    # Check for $get_tools command
-    if "$get_tools" in text.lower():
-        if channel_id in channel_tools and channel_tools[channel_id]:
-            tools_list = "\n- ".join(channel_tools[channel_id])
-            say(f"Currently selected tools for this channel:\n- {tools_list}")
-        else:
-            say("No tools are currently set for this channel.")
-        return
-
-    # Check for $set_tools command
-    if "$set_tools" in text.lower():
-        tools_input = text.split("$set_tools", 1)[1].strip()
-        if tools_input:
-            tools_list = [tool.strip() for tool in tools_input.split(",")]
-            channel_tools[channel_id] = tools_list  # Store the tools for this channel
-            formatted_tools = "\n- ".join(tools_list)
-            logger.info(f"Tools set for channel {channel_id}: {formatted_tools}")
-            say(f"Tools set for this channel:\n- {formatted_tools}")
-        else:
-            say("Please provide tools separated by commas. Example: $settools tool1, tool2, tool3")
-        return
-
-    # Check for $cleartools command
-    if "$clear_tools" in text.lower():
-        if channel_id in channel_tools:
-            del channel_tools[channel_id]
-            logger.info(f"Tools cleared for channel {channel_id}")
-            say("Tools have been cleared for this channel.")
-        else:
-            say("No tools were set for this channel.")
-        return
-
-    # Check for $set_system command
-    if "$set_system" in text.lower():
-        system_message = text.split("$set_system", 1)[1].strip()
-        if system_message:
-            channel_system_messages[channel_id] = system_message
-            logger.info(f"System message set for channel {channel_id}: {system_message}")
-            say(f"System message set for this channel:\n```\n{system_message}\n```")
-        else:
-            say("Please provide a system message. Example: $set_system You are a helpful assistant.")
-        return
-
-    # Check for $get_system command
-    if "$get_system" in text.lower():
-        if channel_id in channel_system_messages:
-            say(f"Current system message for this channel:\n```\n{channel_system_messages[channel_id]}\n```")
-        else:
-            say(f"Using default system message:\n```\n{SYSTEM_PROMPT}\n```")
-        return
-
-    # Check for $clear_system command
-    if "$clear_system" in text.lower():
-        if channel_id in channel_system_messages:
-            del channel_system_messages[channel_id]
-            logger.info(f"System message cleared for channel {channel_id}")
-            say("System message has been cleared for this channel. Using default message.")
-        else:
-            say("No custom system message was set for this channel.")
-        return
-
-    # Check if the user wants to reset the thread
-    if "$reset" in text.lower():
-        if channel_id in conversation_threads:
-            del conversation_threads[channel_id]
-        logger.info(f"Thread reset for channel: {channel_id}")
-        say(f"Thread context has been reset for channel <#{channel_id}>.")
-        return
-
-    # Check if user wants to see available tools
-    if "$list_tools" in text.lower():
-        response = requests.get(TOOLS_ENDPOINT, headers=HEADERS, auth=(APP_USERNAME, APP_PASSWORD))
-        if response.status_code == 200:
-            tools = response.json().get("tools", [])
-            # Extract tool names from the dictionary objects
-            tool_names = [tool.get("id", str(tool)) for tool in tools]
-            tools_list = "\n- ".join(tool_names)
-            say(f"Available tools:\n- {tools_list}")
-        else:
-            say(f"Error fetching tools: {response.status_code}")
-        return
+                      
+    # Handle commands
+    handle_command(event, say, channel_tools, channel_system_messages, conversation_threads)
 
     # Extract the query
     question = text.split(maxsplit=1)[-1] if len(text.split()) > 1 else "What can I help you with?"
@@ -117,9 +37,9 @@ def handle_app_mention(event, say):
     # Check if there's an existing thread for this channel
     thread_id = conversation_threads.get(channel_id)
 
-    print(f"Received question from USER <@{user_id}> in CHANNEL <#{channel_id}>: {question} (Thread ID: {thread_id})")
+    logger.info(f"Received question from USER <@{user_id}> in CHANNEL <#{channel_id}>: {question} (Thread ID: {thread_id})")
     if images:
-        print(f"Received {len(images)} images with the query")
+        logger.info(f"Received {len(images)} images with the query")
 
     # Query the API with images
     new_thread_id, response = query_endpoint(
