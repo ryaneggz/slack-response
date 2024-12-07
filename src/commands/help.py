@@ -27,6 +27,7 @@ def handle_help(event, say):
 
 *Document Management:*
 • `$add_doc <text>` - Add a new document with the provided text
+• `$upload_doc` - Upload one or more files as documents (attach files with command)
 • `$list_docs` - Show all available documents
 • `$get_doc <id>` - Get a specific document by ID
 • `$delete_doc <id1,id2,...>` - Delete one or more documents by ID
