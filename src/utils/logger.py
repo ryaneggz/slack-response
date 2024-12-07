@@ -22,11 +22,11 @@ logger.add(
     diagnose=True,   # Show variable values in tracebacks
 )
 
-# Add a file handler for logging to a file with rotation
+# Add a file handler for logging to a file with daily rotation
 logger.add(
     f"logs/log_{datetime.now().strftime('%Y%m%d')}.log",
     format="{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {name}:{function}:{line} - {message}",
-    rotation="10 MB",  # Rotate log files when they reach 10 MB
+    rotation="00:00",  # Rotate log files at midnight each day
     retention="7 days",  # Keep logs for 7 days
     compression="zip",  # Compress old logs
     level="DEBUG",  # Capture all levels in the log file
