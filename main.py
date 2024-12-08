@@ -5,6 +5,7 @@ load_dotenv()
 
 from src.config import *
 from src.utils.logger import logger
+from src.utils.migrations import run_migrations
 from src.controllers.mention_controller import MentionController
 
 # Initialize the app with your bot token
@@ -37,6 +38,14 @@ def handle_message_events(body, logger):
 ## Start the bot
 #####################################################################
 if __name__ == "__main__":
-    logger.info(f"Starting Slack bot with client at {BASE_API_URL}")
-    handler = SocketModeHandler(app, SLACK_APP_TOKEN)
-    handler.start() 
+    try:
+        # Run database migrations
+        run_migrations()
+        
+        # Start the bot
+        logger.info(f"Starting Slack bot with client at {BASE_API_URL}")
+        handler = SocketModeHandler(app, SLACK_APP_TOKEN)
+        handler.start()
+    except Exception as e:
+        logger.error(f"Failed to start application: {e}")
+        raise 
