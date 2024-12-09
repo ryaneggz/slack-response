@@ -45,6 +45,7 @@ jobs:
         BASE_API_URL=http://localhost:8000
         APP_USERNAME=aiuser
         APP_PASSWORD=${{ secrets.APP_PASSWORD }}
+        DATABASE_URL=${{ secrets.DATABASE_URL }}
         
         # SSH into server and deploy
         ssh -i ~/.ssh/id_ed25519 $SSH_USER@$SSH_HOST "
@@ -80,6 +81,7 @@ jobs:
               -e BASE_API_URL=$BASE_API_URL \
               -e APP_USERNAME=$APP_USERNAME \
               -e APP_PASSWORD=$APP_PASSWORD \
+              -e DATABASE_URL=$DATABASE_URL \
               $IMAGE_NAME; then
               
               # Step 5: Verify the new container is running properly
