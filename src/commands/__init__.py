@@ -17,7 +17,7 @@ def event_data(event):
 #####################################################################
 ## Command handlers
 #####################################################################
-def handle_command(event, say, channel_tools, channel_system_messages, conversation_threads):
+def handle_command(event, say, db_service):
     handled = False
     try:
         # Check help command first
@@ -25,15 +25,15 @@ def handle_command(event, say, channel_tools, channel_system_messages, conversat
         if handled:
             return handled
             
-        handled = handle_thread(event, say, conversation_threads)
+        handled = handle_thread(event, say, db_service)
         if handled:
             return handled
         
-        handled = handle_tools(event, say, channel_tools)
+        handled = handle_tools(event, say, db_service)
         if handled:
             return handled
         
-        handled = handle_system(event, say, channel_system_messages)
+        handled = handle_system(event, say, db_service)
         if handled:
             return handled
             

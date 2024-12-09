@@ -5,8 +5,6 @@ def handle_help(event, say):
     from src.commands import event_data
     _, _, text = event_data(event)
     
-    logger.info(f"Help command received from {event['user']} in {event['channel']}")
-    
     if "$help" in text.lower():
         help_text = """
 *Available Commands:*
@@ -37,6 +35,7 @@ def handle_help(event, say):
 
 For more detailed information about a specific command, type `$help <command>` (e.g., `$help set_tools`)
 """
+        logger.info(f"Help command received from {event['user']} in {event['channel']}")
         say(help_text)
         return True
         
