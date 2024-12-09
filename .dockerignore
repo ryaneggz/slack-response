@@ -15,6 +15,7 @@ __pycache__
 # Git
 .git
 .gitignore
+.git*
 
 # VS Code
 .vscode
@@ -36,13 +37,14 @@ sandbox/graphs/*
 **/__pycache__/
 sandbox/docs
 docker/postgres/data
-Dockerfile
 README.md
 docker*
 scripts
 langgraph.json
 .dockerignore
 .cursorignore
+.gitignore
+Changelog.md
 .vscode
 .git*
 .example.env
@@ -50,3 +52,4 @@ docs
 deployment
 logs/
 tests
+requirements-dev.txt

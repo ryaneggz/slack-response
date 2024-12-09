@@ -2,3 +2,6 @@ slack_bolt
 requests
 python-dotenv
 loguru
+sqlalchemy
+psycopg2-binary
+alembic

@@ -1,12 +1,13 @@
 import requests
 
+from src.services.db_service import DatabaseService
 from src.config import *
 from src.utils.logger import logger
 
 #####################################################################
 ## Tool command handler
 #####################################################################
-def handle_tools(event, say, channel_tools):
+def handle_tools(event, say, db_service: DatabaseService):
     from src.commands import event_data
     channel_id, _, text = event_data(event)
     
@@ -27,8 +28,8 @@ def handle_tools(event, say, channel_tools):
     
     # Check for $get_tools command
     if "$get_tools" in text.lower():
-        if channel_id in channel_tools and channel_tools[channel_id]:
-            tools_list = "\n- ".join(channel_tools[channel_id])
+        if db_service.get_channel_settings(channel_id):
+            tools_list = "\n- ".join(db_service.get_channel_settings(channel_id).tools)
             say(f"Currently selected tools for this channel:\n- {tools_list}")
         else:
             say("No tools are currently set for this channel.")
@@ -39,7 +40,7 @@ def handle_tools(event, say, channel_tools):
         tools_input = text.split("$set_tools", 1)[1].strip()
         if tools_input:
             tools_list = [tool.strip() for tool in tools_input.split(",")]
-            channel_tools[channel_id] = tools_list  # Store the tools for this channel
+            db_service.update_channel_settings(channel_id, tools=tools_list)
             formatted_tools = "\n- ".join(tools_list)
             logger.info(f"Tools set for channel {channel_id}: {formatted_tools}")
             say(f"Tools set for this channel:\n- {formatted_tools}")
@@ -49,8 +50,8 @@ def handle_tools(event, say, channel_tools):
     
     # Check for $cleartools command
     if "$clear_tools" in text.lower():
-        if channel_id in channel_tools:
-            del channel_tools[channel_id]
+        if db_service.get_channel_settings(channel_id):
+            db_service.update_channel_settings(channel_id, tools=None)
             logger.info(f"Tools cleared for channel {channel_id}")
             say("Tools have been cleared for this channel.")
         else:
